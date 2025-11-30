@@ -1,0 +1,103 @@
+OK Tonton,
+tu veux **retrouver 1 seul pod Spark** parmi **168 pods dynamiques**, et **uniquement celui lancé le 24/11/2025 à 14h20**.
+
+➡️ Je te donne **la méthode exacte**, robuste pour IKS/Astronomer/Spark-on-K8s.
+
+---
+
+# 🟩 1) 🔍 Première étape : récupérer **la liste complète** des pods Spark
+
+Les pods Spark dynamiques ont toujours un pattern :
+`<app_name>-<random>-driver` ou `…-executor`.
+
+Donc tu listes tous :
+
+```bash
+kubectl get pods -n <spark-namespace> | grep driver
+```
+
+---
+
+# 🟩 2) 🔎 Deuxième étape : afficher **le timestamp de création** de chaque pod
+
+```bash
+kubectl get pods -n <spark-ns> \
+  -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp
+```
+
+Tu obtiens quelque chose comme :
+
+```
+ap89201-job1-xxxxx-driver    2025-11-24T14:19:58Z
+ap89201-job1-yyyyy-driver    2025-11-25T07:32:10Z
+...
+```
+
+---
+
+# 🟥 3) 🎯 Filtrer directement par date (24 novembre 2025)
+
+En UTC :
+14h20 France = **13h20 UTC**
+
+Donc :
+
+```bash
+kubectl get pods -n <spark-ns> \
+  -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp \
+  | grep "2025-11-24T13:2"
+```
+
+Tu vas normalement voir **1 seul** pod qui matche ~13:20 UTC.
+
+---
+
+# 🟦 4) 🔥 Récupérer **les logs du bon pod**, sans se tromper
+
+Une fois que tu as le nom exact :
+
+```bash
+kubectl logs <pod-name> -n <spark-ns>
+```
+
+OU si le pod a crash :
+
+```bash
+kubectl logs <pod-name> -n <spark-ns> --previous
+```
+
+---
+
+# 🟧 5) 🎯 Méthode ultime : filtrer *directement* dans K8s (sans grep)
+
+```bash
+kubectl get pods -n <spark-ns> \
+  --field-selector=status.startTime>=2025-11-24T13:20:00Z \
+  -o name
+```
+
+Puis :
+
+```bash
+kubectl logs $(kubectl get pods -n <spark-ns> \
+  --field-selector=status.startTime>=2025-11-24T13:20:00Z \
+  -o name) -n <spark-ns>
+```
+
+---
+
+# 🟩 Résultat :
+
+➡️ Tu identifies **le seul pod** qui correspond à la date
+➡️ Tu récupères ses logs même s’il est en erreur/crash
+➡️ Tu évites de te taper les **168 pods** les uns après les autres
+
+---
+
+# 👉 Si tu veux, donne-moi :
+
+* le namespace Spark
+* un `kubectl get pods | head -5`
+* ou même une photo
+
+Et je te génère **directement la commande exacte à copier-coller** qui te sort **UNIQUEMENT le pod du 24/11/2025 à 14h20**.
