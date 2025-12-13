@@ -1,0 +1,45 @@
+# 0) Vérifier le contexte et les namespaces
+kubectl config current-context
+kubectl get ns
+
+# 1) Vérifier les pods Dynatrace
+kubectl get pod -n dynatrace -o wide
+
+# 2) Vérifier que OneAgent est sur tous les nodes
+kubectl get ds oneagent -n dynatrace
+kubectl get node
+
+# 3) Vérifier la configuration Dynatrace (Dynakube)
+kubectl get dynakube -n dynatrace -o yaml
+
+# 4) Vérifier les pods Spark (adapter le namespace)
+kubectl get pod -n spark-prod -o wide
+
+# 5) Décrire un pod Spark (driver de préférence)
+kubectl describe pod <spark-driver-pod> -n spark-prod
+
+# 6) Vérifier l’injection Dynatrace dans le pod Spark
+kubectl describe pod <spark-driver-pod> -n spark-prod | egrep -i "dynatrace|DT_|oneagent|init"
+
+# 7) Logs OneAgent (remplacer XXXXX)
+kubectl logs -n dynatrace oneagent-XXXXX | tail -50
+
+# 8) Logs ActiveGate
+kubectl logs -n dynatrace activegate-XXXXX | tail -50
+
+# 9) Vérifier les droits RBAC du OneAgent
+kubectl auth can-i list pods \
+  --as=system:serviceaccount:dynatrace:dynatrace-oneagent
+
+# 10) Vérifier la durée de vie des pods Spark
+kubectl get pod -n spark-prod --sort-by=.status.startTime
+
+# 11) Vérifier sur quel node tourne un pod Spark
+kubectl get pod <spark-driver-pod> -n spark-prod \
+  -o jsonpath='{.spec.nodeName}{"\n"}'
+
+# 12) Vérifier qu’un OneAgent tourne sur ce node
+kubectl get pod -n dynatrace -o wide | grep <node-name>
+
+# 13) Vérifier les events Dynatrace
+kubectl get events -n dynatrace --sort-by=.lastTimestamp | tail
