@@ -1,3 +1,18 @@
+
+def td_error(error_msg: str | None) -> str:
+    content = error_msg or ""
+    return f"""
+    <td style="
+        text-align:center;
+        font-size:12px;
+        font-style:italic;
+        color:#d43f3a;
+    ">
+        {content}
+    </td>
+    """
+
+
 OK Tonton,
 tu veux **retrouver 1 seul pod Spark** parmi **168 pods dynamiques**, et **uniquement celui lancé le 24/11/2025 à 14h20**.
 
